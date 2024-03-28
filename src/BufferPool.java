@@ -4,6 +4,7 @@ public class BufferPool {
 
     private Frame[] buffers;
     private int lastEvicted;
+    private int lastEvictedBlock;
 
     public BufferPool(){
 
@@ -50,9 +51,10 @@ public class BufferPool {
     }
     public int eviction(){
         int start = (lastEvicted + 1) % buffers.length;
-        for(int i = start, count = 0; count < buffers.length; i = (i++ % buffers.length), count++){
+        for(int i = start, count = 0; count < buffers.length; i = ((i + 1) % buffers.length), count++){
             if(!buffers[i].getPinned()){
                 if(buffers[i].getDirty()){
+                    lastEvictedBlock = buffers[i].getBlockId();
                     buffers[i].writeFile();
                     return i;
                 }
@@ -89,18 +91,23 @@ public class BufferPool {
             String recordContent = new String(buffers[idx].getRecord(recordId));
             System.out.print(recordContent + "; ");
             System.out.print("File " + blockId + " already in memory; ");
-            System.out.println("Located in " + (idx + 1));
+            System.out.println("Located in Frame " + (idx + 1));
         }
         else{
-            if(loadBlock(blockId) != -1){
+            int loadRes = loadBlock(blockId);
+            if(loadRes != -1){
                 idx = searchBuffer(blockId);
                 String recordContent = new String(buffers[idx].getRecord(recordId));
-                System.out.print(recordContent + "; ");
-                System.out.print("Brought File " + blockId + " from disk; ");
-                System.out.println("Located in " + (idx + 1));
+                recordContent += "; ";
+                recordContent +=("Brought file " + blockId + " from disk; ");
+                recordContent +=("Placed in Frame " + (idx + 1));
+                if(loadRes == 0){
+                    recordContent +=("; Evicted file " + this.lastEvictedBlock + " from Frame " + (this.lastEvicted + 1));
+                }
+                System.out.println(recordContent);
             }
             else{
-                System.out.println( "The corresponding block " + blockId + " cannot be accessed from disk because the memory buffers are full");
+                System.out.println( "The corresponding block #" + blockId + " cannot be accessed from disk because the memory buffers are full");
             }
         }
 
@@ -113,19 +120,25 @@ public class BufferPool {
         if(idx != -1){
             buffers[idx].updateRecord(recordId, newRecord);
             System.out.print("Write was successful; ");
-            System.out.print("Block was already in memory; ");
-            System.out.println("Frame number: " + (idx + 1));
+            System.out.print("File " + blockId + " already in memory; ");
+            System.out.println("Located in Frame " + (idx + 1));
         }
         else{
-            if(loadBlock(blockId) != -1){
+            int loadRes = loadBlock(blockId);
+            if(loadRes != -1){
                 idx = searchBuffer(blockId);
                 buffers[idx].updateRecord(recordId, newRecord);
-                System.out.print("Write was successful; ");
-                System.out.print("Brought File " + blockId + " from disk; ");
-                System.out.println("Placed in Frame " + (idx + 1));
+                String printString = "";
+                printString += "Write was successful; ";
+                printString += "Brought File " + blockId + " from disk; ";
+                printString += "Placed in Frame " + (idx + 1);
+                if(loadRes == 0){
+                    printString += "; Evicted file " + (this.lastEvictedBlock + 1) + " from Frame " + (this.lastEvicted + 1);
+                }
+                System.out.println(printString);
             }
             else{
-                System.out.println( "The corresponding block " + blockId + " cannot be accessed from disk because the memory buffers are full");
+                System.out.println( "The corresponding block #" + blockId + " cannot be accessed from disk because the memory buffers are full");
             }
         }
 
@@ -144,16 +157,24 @@ public class BufferPool {
             }
         }
         else{
-            if (loadBlock(blockId) != -1){
+            int loadRes = loadBlock(blockId);
+            if (loadRes != -1){
                 idx = searchBuffer(blockId);
                 boolean prevPin = buffers[idx].setPinned(true);
-                System.out.print("File " + blockId + " pinned in Frame " + (idx +1) + "; ");
+                String printString = "";
+                printString += ("File " + blockId + " pinned in Frame " + (idx +1) + "; ");
                 if(prevPin){
-                    System.out.println("Already pinned");
+                    printString += ("Already pinned");
                 }
                 else{
-                    System.out.println("Not already pinned");
+                    printString+= ("Not already pinned");
                 }
+
+                if(loadRes == 0){
+                    printString += "; Evicted file " + (this.lastEvictedBlock +1) + " from frame " + (this.lastEvicted +1);
+                }
+                System.out.println(printString);
+
             }
             else{
                 System.out.println( "The corresponding block " + blockId + " cannot be pinned because the memory buffers are full");
@@ -174,7 +195,7 @@ public class BufferPool {
             }
         }
         else{
-            System.out.println("The corresponding block " + blockId + " cannot be unpinned because it is not in memory");
+            System.out.println("The corresponding block " + blockId + " cannot be unpinned because it is not in memory.");
         }
 
     }
