@@ -1,0 +1,22 @@
+Set 430 "F05-Rec450, Jane Do, 10 Hill Rd, age020."
+Get 430
+Get 20
+Set 430
+Pin 5
+Unpin 3
+Get 430
+Pin 5
+Get 646
+Pin 3
+Set 10 "F01-Rec010, Tim Boe, 09 Deer Dr, age009."
+Unpin 1
+Get 355
+Pin 2
+Get 156
+Set 10 "F01-Rec010, No Work, 31 Hill St, age100."
+Pin 7
+Get 10
+Unpin 3
+Unpin 2
+Get 10
+Pin 6

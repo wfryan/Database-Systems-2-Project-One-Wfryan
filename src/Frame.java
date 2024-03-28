@@ -27,6 +27,7 @@ public class Frame {
             int fiRead = fi.read(this.content);
             this.dirty = false;
             this.pinned = false;
+            this.blockId = num;
             fi.close();
 
         }
@@ -52,13 +53,16 @@ public class Frame {
     public void updateRecord(int recordNum, byte[] newRecord){
         if(newRecord.length == 40){
             this.dirty = true;
-            System.arraycopy(newRecord, 0, this.content, recordNum - 1, 40);
+            System.arraycopy(newRecord, 0, this.content, ((recordNum-1) *40), 40);
         }
     }
 
     public byte[] getRecord(int recordNum){
         byte[] returnArr = new byte[40];
-        System.arraycopy(this.content, recordNum - 1, returnArr, 0, 40);
+        /*for(int i = 0; i < 40; i++){
+            returnArr[i] = content[(((recordNum * 40) + i) - 1)];
+        }*/
+        System.arraycopy(this.content, ((recordNum - 1) * 40), returnArr, 0, 40);
         return returnArr;
     }
     public void setBlockId(int id){
